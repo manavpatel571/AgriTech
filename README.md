@@ -3,6 +3,10 @@
 
 AgriTech Assistant is an innovative agricultural platform designed to empower Indian farmers by providing intelligent solutions for crop yield prediction, plant disease detection, and a chatbot for resolving queries in Indian languages. This README provides an overview of the project and guides you on how to set up and run the application.
 
+[Watch the video on YouTube](https://www.youtube.com/watch?v=MY8QA6Klx0o)
+
+[![Title](https://img.youtube.com/vi/MY8QA6Klx0o/0.jpg)](https://www.youtube.com/watch?v=MY8QA6Klx0o)
+
 ---
 
 ## Project Overview
@@ -77,6 +81,13 @@ The application will be accessible at `http://127.0.0.1:5000`.
 1. **Crop Yield Prediction**: Navigate to the respective feature and input environmental data for predictions.
 2. **Plant Disease Detection**: Upload images of plant leaves to detect diseases.
 3. **Farmer Query Chatbot**: Interact with the chatbot to get answers to farming-related questions in Indian languages.
+
+---
+## User Interface
+
+Below are screenshots of the website showcasing the user-friendly interface:
+![alt text](https://github.com/manavpatel571/AgriTech/blob/main/static/uploads/Screenshot%20(593).png)
+
 
 ---
 
