@@ -79,6 +79,14 @@ The application will be accessible at `http://127.0.0.1:5000`.
 3. **Farmer Query Chatbot**: Interact with the chatbot to get answers to farming-related questions in Indian languages.
 
 ---
+## User Interface
+
+Below are screenshots of the website showcasing the user-friendly interface:
+![interface]([image_url](https://github.com/manavpatel571/AgriTech/blob/main/static/uploads/Screenshot%20(593).png))
+
+
+
+---
 
 ## License
 This project is licensed under the terms specified in the `LICENSE` file.
