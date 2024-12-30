@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import numpy as np
 import pandas as pd
 import joblib
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
-
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from PIL import Image
 import os
 from catboost import CatBoostRegressor
@@ -18,71 +18,37 @@ UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Load crop yield prediction models and encoders
-catboost_model = joblib.load('models/catboost_model.pkl')
-xgboost_model = joblib.load('models/xgboost_model.pkl')
-state_encoder = joblib.load('models/State_encoder.pkl')
-crop_type_encoder = joblib.load('models/Crop_Type_encoder.pkl')
-soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
+# Ensure upload folder exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Get available options for categorical variables
-states = state_encoder.classes_
-crop_types = crop_type_encoder.classes_
-soil_types = soil_type_encoder.classes_
+# Load Models and Encoders
+try:
+    catboost_model = joblib.load('models/catboost_model.pkl')
+    xgboost_model = joblib.load('models/xgboost_model.pkl')
+    state_encoder = joblib.load('models/State_encoder.pkl')
+    crop_type_encoder = joblib.load('models/Crop_Type_encoder.pkl')
+    soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
+    
+    states = state_encoder.classes_
+    crop_types = crop_type_encoder.classes_
+    soil_types = soil_type_encoder.classes_
+except Exception as e:
+    print(f"Error loading prediction models: {e}")
 
-def load_model():
-    model_name = "microsoft/DialoGPT-medium"  # Multilingual conversational model
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    return model, tokenizer
+# Load Chatbot Model
+def load_chatbot_model():
+    model_name = "nvidia/Nemotron-4-Mini-Hindi-4B-Instruct"
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name)
+        return model, tokenizer
+    except Exception as e:
+        print(f"Error loading chatbot model: {e}")
+        return None, None
 
-# Chatbot Response Dictionaries
-PLANT_RESPONSES = {
-    'चावल': """चावल के प्रमुख फायदे:
-1. ऊर्जा का मुख्य स्रोत
-2. आसानी से पचने वाला भोजन
-3. ग्लूटेन फ्री होता है
-4. विटामिन बी से भरपूर
-5. हृदय के लिए फायदेमंद
-6. रक्तचाप नियंत्रित करने में मदद करता है""",
+chatbot_model, chatbot_tokenizer = load_chatbot_model()
 
-    'गेहूं': """गेहूं के प्रमुख फायदे:
-1. फाइबर से भरपूर
-2. प्रोटीन का अच्छा स्रोत
-3. एंटीऑक्सीडेंट से भरपूर
-4. पाचन में सहायक
-5. वजन घटाने में मददगार
-6. ऊर्जा प्रदान करता है""",
-
-    'टमाटर': """टमाटर के फायदे:
-1. विटामिन सी से भरपूर
-2. एंटीऑक्सीडेंट गुणों से युक्त
-3. त्वचा के लिए फायदेमंद
-4. आंखों के लिए लाभदायक
-5. हृदय रोग से बचाव
-6. कैंसर से बचाव में सहायक""",
-}
-
-# Disease detection model class and categories
-class_names = [
-    'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust',
-    'Apple___healthy', 'Background_without_leaves', 'Blueberry___healthy',
-    'Cherry___Powdery_mildew', 'Cherry___healthy',
-    'Corn___Cercospora_leaf_spot Gray_leaf_spot', 'Corn___Common_rust',
-    'Corn___Northern_Leaf_Blight', 'Corn___healthy', 'Grape___Black_rot',
-    'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)',
-    'Grape___healthy', 'Orange___Haunglongbing_(Citrus_greening)',
-    'Peach___Bacterial_spot', 'Peach___healthy', 'Pepper,_bell___Bacterial_spot',
-    'Pepper,_bell___healthy', 'Potato___Early_blight', 'Potato___Late_blight',
-    'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy',
-    'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy',
-    'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight',
-    'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot',
-    'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot',
-    'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
-    'Tomato___healthy'
-]
-
+# Disease Detection Model
 class CustomCNN(nn.Module):
     def __init__(self, num_classes):
         super(CustomCNN, self).__init__()
@@ -153,6 +119,33 @@ class CustomCNN(nn.Module):
         x = self.classifier(x)
         return x
 
+# Predefined Chatbot Responses
+FARMING_RESPONSES = {
+    'फसल': """मुख्य फसलें:
+1. खरीफ फसलें: धान, मक्का, ज्वार, बाजरा
+2. रबी फसलें: गेहूं, चना, सरसों
+3. जायद फसलें: तरबूज, खरबूजा, ककड़ी""",
+
+    'खाद': """खाद के प्रकार:
+1. जैविक खाद
+2. रासायनिक खाद
+3. कम्पोस्ट खाद
+सही मात्रा में खाद का प्रयोग करें।""",
+
+    'कीट': """कीट नियंत्रण के उपाय:
+1. जैविक कीटनाशक का प्रयोग
+2. फसल चक्र अपनाएं
+3. समय पर निराई-गुड़ाई
+4. रोग प्रतिरोधी किस्में चुनें""",
+
+    'सिंचाई': """सिंचाई के तरीके:
+1. फव्वारा सिंचाई
+2. बूंद-बूंद सिंचाई
+3. नहर सिंचाई
+पानी की बचत करें।"""
+}
+
+# Utility Functions
 def feature_engineering(df):
     processed = df.copy()
     
@@ -180,15 +173,7 @@ def feature_engineering(df):
         processed[f'Crop_Type_{col}_max'] = processed['Crop_Type']
         processed[f'Crop_Type_{col}_min'] = processed['Crop_Type']
     
-    expected_columns = ['Year', 'State', 'Crop_Type', 'Rainfall', 'Soil_Type', 'Irrigation_Area',
-                       'Year_Rainfall_interaction', 'Year_Irrigation_Area_interaction', 'Year_ratio_to_rainfall',
-                       'Rainfall_Irrigation_Area_interaction', 'Rainfall_ratio_to_rainfall', 'Year Rainfall',
-                       'Year Irrigation_Area', 'Rainfall Irrigation_Area', 'Year Rainfall Irrigation_Area',
-                       'Rainfall_log', 'Irrigation_Area_log'] + \
-                      [f'State_{col}_{agg}' for col in numerical_cols for agg in ['mean', 'std', 'max', 'min']] + \
-                      [f'Crop_Type_{col}_{agg}' for col in numerical_cols for agg in ['mean', 'std', 'max', 'min']]
-    
-    return processed[expected_columns]
+    return processed
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -204,9 +189,59 @@ def process_image(image_path):
     image = transform(image).unsqueeze(0)
     return image
 
+# Routes
 @app.route('/')
 def home():
     return render_template('home.html')
+
+@app.route('/chat_interface')
+def chat_interface():
+    return render_template('chat_widget.html')
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    try:
+        message = request.json['message'].strip()
+        
+        # Check predefined responses
+        for keyword, response in FARMING_RESPONSES.items():
+            if keyword in message.lower():
+                return jsonify({'response': response})
+        
+        # Use model for other queries
+        if chatbot_model is None or chatbot_tokenizer is None:
+            return jsonify({'response': 'माफ़ कीजिये, मॉडल लोड नहीं हो पाया। कृपया बाद में प्रयास करें।'})
+
+        prompt = f"User: {message}\nAssistant:"
+        inputs = chatbot_tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        
+        with torch.no_grad():
+            outputs = chatbot_model.generate(
+                inputs.input_ids,
+                max_length=200,
+                num_return_sequences=1,
+                no_repeat_ngram_size=2,
+                do_sample=True,
+                top_k=50,
+                top_p=0.95,
+                temperature=0.7,
+                pad_token_id=chatbot_tokenizer.pad_token_id,
+                eos_token_id=chatbot_tokenizer.eos_token_id,
+            )
+        
+        response = chatbot_tokenizer.decode(outputs[0], skip_special_tokens=True)
+        response = response.split("Assistant:")[-1].strip()
+        
+        if not response:
+            response = "माफ़ कीजिये, मैं इस सवाल का जवाब नहीं दे सकता। कृपया कृषि से संबंधित दूसरा प्रश्न पूछें।"
+        
+        return jsonify({'response': response})
+        
+    except Exception as e:
+        print(f"Error in chat endpoint: {e}")
+        return jsonify({
+            'response': 'माफ़ कीजिये, कुछ तकनीकी समस्या आ गई। कृपया दोबारा प्रयास करें।'
+        }), 500
 
 @app.route('/yield_prediction')
 def yield_prediction():
@@ -214,10 +249,6 @@ def yield_prediction():
                          states=states,
                          crop_types=crop_types,
                          soil_types=soil_types)
-
-@app.route('/disease_detection')
-def disease_detection():
-    return render_template('index2.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -249,65 +280,46 @@ def predict():
     except Exception as e:
         return render_template('result.html', error=str(e))
 
-@app.route('/upload_file', methods=['GET', 'POST'])
+@app.route('/disease_detection')
+def disease_detection():
+    return render_template('index2.html')
+
+@app.route('/upload_file', methods=['POST'])
 def upload_file():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            return render_template('index2.html', error='No file part')
+    if 'file' not in request.files:
+        return render_template('index2.html', error='No file part')
+    
+    file = request.files['file']
+    if file.filename == '':
+        return render_template('index2.html', error='No selected file')
+    
+    if file and allowed_file(file.filename):
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(filename)
         
-        file = request.files['file']
-        if file.filename == '':
-            return render_template('index2.html', error='No selected file')
-        
-        if file and allowed_file(file.filename):
-            filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(filename)
+        try:
+            image = process_image(filename)
             
-            try:
-                image = process_image(filename)
+            with torch.no_grad():
+                outputs = disease_model(image)
+                _, predicted = torch.max(outputs, 1)
+                probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
+                probability = probabilities[predicted].item() * 100
+                disease = class_names[predicted.item()]
                 
-                with torch.no_grad():
-                    outputs = model(image)
-                    _, predicted = torch.max(outputs, 1)
-                    probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
-                    probability = probabilities[predicted].item() * 100
-                    disease = class_names[predicted.item()]
-                    
-                    return render_template('result2.html',
-                                         filename=file.filename,
-                                         disease=disease,
-                                         probability=f"{probability:.2f}%")
-            except Exception as e:
-                return render_template('index2.html', error=str(e))
+                return render_template('result2.html',
+                                     filename=file.filename,
+                                     disease=disease,
+                                     probability=f"{probability:.2f}%")
+        except Exception as e:
+            return render_template('index2.html', error=str(e))
     
     return render_template('index2.html')
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    try:
-        message = request.json['message'].strip().lower()
-        
-        # Check for keywords in the message
-        for keyword, response in PLANT_RESPONSES.items():
-            if keyword in message:
-                return jsonify({'response': response})
-        
-        # Default response if no matching keywords
-        return jsonify({'response': """माफ़ कीजिये, मैं इस सवाल का जवाब नहीं दे सकता। 
-कृपया निम्नलिखित फसलों के बारे में पूछें:
-1. चावल
-2. गेहूं   
-3. टमाटर
-या अन्य कृषि संबंधित प्रश्न पूछें।"""})
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 if __name__ == '__main__':
     # Initialize disease detection model
-    model = CustomCNN(num_classes=38)
-    model.load_state_dict(torch.load('models/plant_disease_model.pt', map_location=torch.device('cpu')))
-    model.eval()
+    disease_model = CustomCNN(num_classes=38)
+    disease_model.load_state_dict(torch.load('models/plant_disease_model.pt', map_location=torch.device('cpu')))
+    disease_model.eval()
     
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
