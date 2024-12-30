@@ -82,8 +82,7 @@ The application will be accessible at `http://127.0.0.1:5000`.
 ## User Interface
 
 Below are screenshots of the website showcasing the user-friendly interface:
-![interface]([image_url](https://github.com/manavpatel571/AgriTech/blob/main/static/uploads/Screenshot%20(593).png))
-
+![alt text](https://github.com/manavpatel571/AgriTech/blob/main/static/uploads/Screenshot%20(593).png)
 
 
 ---
