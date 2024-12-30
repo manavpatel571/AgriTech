@@ -3,7 +3,7 @@
 
 AgriTech Assistant is an innovative agricultural platform designed to empower Indian farmers by providing intelligent solutions for crop yield prediction, plant disease detection, and a chatbot for resolving queries in Indian languages. This README provides an overview of the project and guides you on how to set up and run the application.
 
-:::youtube[Title]{#MY8QA6Klx0o}
+:::youtube[Title]{MY8QA6Klx0o}
 [Video Link](https://www.youtube.com/watch?v=MY8QA6Klx0o)
 ---
 
