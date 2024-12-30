@@ -1,0 +1,80 @@
+<!-- templates/result.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prediction Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background-color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prediction Result</h1>
+        
+        {% if error %}
+        <div class="error">
+            <p>Error: {{ error }}</p>
+        </div>
+        {% else %}
+        <div class="result">
+            <h2>Predicted Crop Yield: {{ prediction }} kg/ha</h2>
+            
+            <h3>Input Details:</h3>
+            <ul>
+                <li>State: {{ input_data.State }}</li>
+                <li>Crop Type: {{ input_data.Crop_Type }}</li>
+                <li>Soil Type: {{ input_data.Soil_Type }}</li>
+                <li>Year: {{ input_data.Year }}</li>
+                <li>Rainfall: {{ input_data.Rainfall }} mm</li>
+                <li>Irrigation Area: {{ input_data.Irrigation_Area }} ha</li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        <a href="{{ url_for('home') }}" class="button">Make Another Prediction</a>
+    </div>
+</body>
+</html>

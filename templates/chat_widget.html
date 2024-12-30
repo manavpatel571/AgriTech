@@ -1,0 +1,221 @@
+<div class="chat-widget">
+    <div class="chat-icon" onclick="toggleChat()">
+        🌿
+    </div>
+    <div class="chat-box" id="chatBox">
+        <div class="chat-header">
+            कृषि सहायक
+            <span class="close-btn" onclick="toggleChat()">×</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <p>नमस्ते! मैं आपकी कृषि संबंधित सवालों में मदद कर सकता हूं। आप हिंदी या अंग्रेजी में पूछ सकते हैं।</p>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="यहां टाइप करें...">
+            <button onclick="sendMessage()">भेजें</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.chat-icon {
+    width: 50px;
+    height: 50px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 24px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.chat-icon:hover {
+    transform: scale(1.1);
+}
+
+.chat-box {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 350px;
+    height: 500px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.chat-header {
+    padding: 15px;
+    background: #4CAF50;
+    color: white;
+    border-radius: 15px 15px 0 0;
+    font-weight: bold;
+}
+
+.chat-messages {
+    height: 380px;
+    overflow-y: auto;
+    padding: 15px;
+    background: #f5f5f5;
+}
+
+.chat-messages p {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    max-width: 80%;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.chat-input {
+    padding: 15px;
+    display: flex;
+    background: white;
+    border-top: 1px solid #eee;
+    border-radius: 0 0 15px 15px;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    margin-right: 10px;
+    outline: none;
+}
+
+.chat-input button {
+    padding: 8px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-input button:hover {
+    background: #45a049;
+}
+
+.close-btn {
+    float: right;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+.loading-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    background: #4CAF50;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+</style>
+
+<script>
+function toggleChat() {
+    const chatBox = document.getElementById('chatBox');
+    chatBox.style.display = chatBox.style.display === 'none' ? 'block' : 'none';
+}
+
+function sendMessage() {
+    const input = document.getElementById('userInput');
+    const message = input.value;
+    if (message.trim()) {
+        const chatMessages = document.getElementById('chatMessages');
+        
+        // Add user message
+        chatMessages.innerHTML += `
+            <p style="background: #e3f2fd; margin-left: auto;">
+                <strong>आप:</strong> ${message}
+            </p>
+        `;
+
+        // Add loading indicator
+        const loadingId = 'loading-' + Date.now();
+        chatMessages.innerHTML += `
+            <div id="${loadingId}" class="loading-indicator">
+                <div class="loading-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({message: message})
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remove loading indicator
+            document.getElementById(loadingId).remove();
+            
+            // Add bot response
+            chatMessages.innerHTML += `
+                <p style="background: #f1f1f1;">
+                    <strong>बॉट:</strong> ${data.response}
+                </p>
+            `;
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        })
+        .catch(error => {
+            document.getElementById(loadingId).remove();
+            chatMessages.innerHTML += `
+                <p style="background: #ffebee;">
+                    <strong>Error:</strong> Sorry, something went wrong.
+                </p>
+            `;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+    }
+}
+
+// Allow sending message with Enter key
+document.getElementById('userInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+</script>

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block additional_head %}
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+                    url('/static/images/agriculture-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 100px 0;
+        margin-bottom: 50px;
+    }
+
+    .card {
+        border: none;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        background-color: white;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-icon {
+        font-size: 3rem;
+        color: #198754;
+        margin-bottom: 20px;
+    }
+
+    .card-title {
+        color: #198754;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .btn-custom {
+        background-color: #198754;
+        color: white;
+        padding: 10px 25px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-custom:hover {
+        background-color: #146c43;
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .features-section {
+        padding: 50px 0;
+    }
+
+    .contact-section {
+        background-color: #198754;
+        color: white;
+        padding: 50px 0;
+        margin-top: 50px;
+    }
+
+    .social-icons {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .social-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .social-icon i {
+        font-size: 24px;
+        color: #198754;
+    }
+
+    .social-icon:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .social-icon:hover i {
+        color: #146c43;
+    }
+
+    .contact-info {
+        margin-top: 30px;
+        font-size: 1.1rem;
+    }
+
+    .contact-info i {
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section text-center">
+    <div class="container">
+        <h1 class="display-4 mb-4">Agricultural Analysis Platform</h1>
+        <p class="lead">Empowering farmers with intelligent solutions for better yields</p>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="features-section">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100 p-4 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line card-icon"></i>
+                        <h3 class="card-title">Crop Yield Prediction</h3>
+                        <p class="card-text mb-4">
+                            Predict crop yields based on environmental factors, location, and agricultural practices.
+                        </p>
+                        <a href="{{ url_for('yield_prediction') }}" class="btn btn-custom">
+                            Make Prediction <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100 p-4 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-microscope card-icon"></i>
+                        <h3 class="card-title">Plant Disease Detection</h3>
+                        <p class="card-text mb-4">
+                            Upload images of plant leaves to detect diseases and assess plant health.
+                        </p>
+                        <a href="{{ url_for('disease_detection') }}" class="btn btn-custom">
+                            Detect Disease <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Section -->
+<section class="contact-section">
+    <div class="container text-center">
+        <h2 class="mb-4">Contact Us</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <p class="mb-4">Have questions? Feel free to reach out to us!</p>
+                
+                <div class="social-icons">
+                    <a href="mailto:manavp571@gmail.com" class="social-icon" title="Email">
+                        <i class="fas fa-envelope"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/in/manav-patel-571-aiml/" target="_blank" class="social-icon" title="LinkedIn">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a href="https://github.com/manavpatel571" target="_blank" class="social-icon" title="GitHub">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <!-- Optional: Add more social media icons -->
+                    <!-- <a href="https://twitter.com/your-handle" target="_blank" class="social-icon" title="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a> -->
+                </div>
+
+                <div class="contact-info">
+                    <p><i class="fas fa-envelope"></i> manavp571@gmail.com</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Mumbai,India</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

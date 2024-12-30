@@ -1,0 +1,12 @@
+Flask
+numpy
+pandas
+scikit-learn==1.2.2
+catboost==1.2.7
+xgboost==2.0.3
+joblib
+werkzeug
+torch
+torchvision
+transformers
+llama-cpp-python
