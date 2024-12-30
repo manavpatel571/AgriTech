@@ -19,11 +19,11 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Load crop yield prediction models and encoders
-catboost_model = joblib.load('catboost_model.pkl')
-xgboost_model = joblib.load('xgboost_model.pkl')
-state_encoder = joblib.load('State_encoder.pkl')
-crop_type_encoder = joblib.load('Crop_Type_encoder.pkl')
-soil_type_encoder = joblib.load('Soil_Type_encoder.pkl')
+catboost_model = joblib.load('models/catboost_model.pkl')
+xgboost_model = joblib.load('models/xgboost_model.pkl')
+state_encoder = joblib.load('models/State_encoder.pkl')
+crop_type_encoder = joblib.load('models/Crop_Type_encoder.pkl')
+soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
 
 # Get available options for categorical variables
 states = state_encoder.classes_
@@ -296,7 +296,7 @@ def chat():
         return jsonify({'response': """माफ़ कीजिये, मैं इस सवाल का जवाब नहीं दे सकता। 
 कृपया निम्नलिखित फसलों के बारे में पूछें:
 1. चावल
-2. गेहूं
+2. गेहूं   
 3. टमाटर
 या अन्य कृषि संबंधित प्रश्न पूछें।"""})
         
@@ -306,7 +306,7 @@ def chat():
 if __name__ == '__main__':
     # Initialize disease detection model
     model = CustomCNN(num_classes=38)
-    model.load_state_dict(torch.load('plant_disease_model.pt', map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load('models/plant_disease_model.pt', map_location=torch.device('cpu')))
     model.eval()
     
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
