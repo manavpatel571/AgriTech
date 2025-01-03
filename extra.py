@@ -5,12 +5,11 @@ import joblib
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
+
 from PIL import Image
 import os
 from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
-from sklearn.tree import DecisionTreeRegressor
-from lightgbm import LGBMRegressor
 
 app = Flask(__name__)
 
@@ -20,8 +19,8 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Load crop yield prediction models and encoders
-dt_model = joblib.load('models/dt_model.pkl')
-lgbm_model = joblib.load('models/lgbm_model.pkl')
+catboost_model = joblib.load('models/catboost_model.pkl')
+xgboost_model = joblib.load('models/xgboost_model.pkl')
 state_encoder = joblib.load('models/State_encoder.pkl')
 crop_type_encoder = joblib.load('models/Crop_Type_encoder.pkl')
 soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
@@ -30,6 +29,12 @@ soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
 states = state_encoder.classes_
 crop_types = crop_type_encoder.classes_
 soil_types = soil_type_encoder.classes_
+
+def load_model():
+    model_name = "microsoft/DialoGPT-medium"  # Multilingual conversational model
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    return model, tokenizer
 
 # Chatbot Response Dictionaries
 PLANT_RESPONSES = {
@@ -149,16 +154,41 @@ class CustomCNN(nn.Module):
         return x
 
 def feature_engineering(df):
-    """
-    Simplified feature engineering that matches the training data
-    """
     processed = df.copy()
     
-    # Keep only the basic features that were used in training
-    basic_features = ['Year', 'State', 'Crop_Type', 'Rainfall', 'Soil_Type', 'Irrigation_Area']
-    processed = processed[basic_features]
+    numerical_cols = ['Year', 'Rainfall', 'Irrigation_Area']
     
-    return processed
+    processed['Year_Rainfall_interaction'] = processed['Year'] * processed['Rainfall']
+    processed['Year_Irrigation_Area_interaction'] = processed['Year'] * processed['Irrigation_Area']
+    processed['Rainfall_Irrigation_Area_interaction'] = processed['Rainfall'] * processed['Irrigation_Area']
+    processed['Year_ratio_to_rainfall'] = processed['Year'] / (processed['Rainfall'] + 1e-5)
+    processed['Rainfall_ratio_to_rainfall'] = processed['Rainfall'] / (processed['Rainfall'] + 1e-5)
+    processed['Year Rainfall'] = processed['Year'] * processed['Rainfall']
+    processed['Year Irrigation_Area'] = processed['Year'] * processed['Irrigation_Area']
+    processed['Rainfall Irrigation_Area'] = processed['Rainfall'] * processed['Irrigation_Area']
+    processed['Year Rainfall Irrigation_Area'] = processed['Year'] * processed['Rainfall'] * processed['Irrigation_Area']
+    processed['Rainfall_log'] = np.log1p(processed['Rainfall'])
+    processed['Irrigation_Area_log'] = np.log1p(processed['Irrigation_Area'])
+    
+    for col in numerical_cols:
+        processed[f'State_{col}_mean'] = processed['State']
+        processed[f'State_{col}_std'] = processed['State']
+        processed[f'State_{col}_max'] = processed['State']
+        processed[f'State_{col}_min'] = processed['State']
+        processed[f'Crop_Type_{col}_mean'] = processed['Crop_Type']
+        processed[f'Crop_Type_{col}_std'] = processed['Crop_Type']
+        processed[f'Crop_Type_{col}_max'] = processed['Crop_Type']
+        processed[f'Crop_Type_{col}_min'] = processed['Crop_Type']
+    
+    expected_columns = ['Year', 'State', 'Crop_Type', 'Rainfall', 'Soil_Type', 'Irrigation_Area',
+                       'Year_Rainfall_interaction', 'Year_Irrigation_Area_interaction', 'Year_ratio_to_rainfall',
+                       'Rainfall_Irrigation_Area_interaction', 'Rainfall_ratio_to_rainfall', 'Year Rainfall',
+                       'Year Irrigation_Area', 'Rainfall Irrigation_Area', 'Year Rainfall Irrigation_Area',
+                       'Rainfall_log', 'Irrigation_Area_log'] + \
+                      [f'State_{col}_{agg}' for col in numerical_cols for agg in ['mean', 'std', 'max', 'min']] + \
+                      [f'Crop_Type_{col}_{agg}' for col in numerical_cols for agg in ['mean', 'std', 'max', 'min']]
+    
+    return processed[expected_columns]
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -192,7 +222,6 @@ def disease_detection():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Create input data dictionary
         input_data = {
             'State': request.form['state'],
             'Crop_Type': request.form['crop_type'],
@@ -202,23 +231,16 @@ def predict():
             'Irrigation_Area': float(request.form['irrigation_area'])
         }
 
-        # Create DataFrame
         input_df = pd.DataFrame([input_data])
-        
-        # Encode categorical variables
         input_df['State'] = state_encoder.transform([input_data['State']])[0]
         input_df['Crop_Type'] = crop_type_encoder.transform([input_data['Crop_Type']])[0]
         input_df['Soil_Type'] = soil_type_encoder.transform([input_data['Soil_Type']])[0]
 
-        # Apply feature engineering
         input_processed = feature_engineering(input_df)
         
-        # Make predictions
-        dt_pred = dt_model.predict(input_processed)[0]
-        lgbm_pred = lgbm_model.predict(input_processed)[0]
-        
-        # Combine predictions using the same weights as in training
-        final_prediction = 0.9 * dt_pred + 0.108 * lgbm_pred
+        catboost_pred = catboost_model.predict(input_processed)[0]
+        xgboost_pred = xgboost_model.predict(input_processed)[0]
+        final_prediction = 0.6 * catboost_pred + 0.4 * xgboost_pred
 
         return render_template('result.html',
                              prediction=round(final_prediction, 2),
