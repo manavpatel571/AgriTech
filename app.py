@@ -25,14 +25,14 @@ lgbm_model = joblib.load('models/lgbm_model.pkl')
 state_encoder = joblib.load('models/State_encoder.pkl')
 crop_type_encoder = joblib.load('models/Crop_Type_encoder.pkl')
 soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
-
+ 
 # Get available options for categorical variables
 states = state_encoder.classes_
 crop_types = crop_type_encoder.classes_
 soil_types = soil_type_encoder.classes_
 
 # Chatbot Response Dictionaries
-PLANT_RESPONSES = {
+PLANT_RESPONSES = { 
     'चावल': """चावल के प्रमुख फायदे:
 1. ऊर्जा का मुख्य स्रोत
 2. आसानी से पचने वाला भोजन
