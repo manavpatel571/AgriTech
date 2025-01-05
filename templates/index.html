@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block content %}
 <!-- templates/index.html -->
 <!DOCTYPE html>
@@ -54,6 +53,12 @@
         button:hover {
             background-color: #45a049;
         }
+        .loading {
+            display: none;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -63,13 +68,9 @@
             <div class="form-group">
                 <label for="state">State:</label>
                 <select id="state" name="state" required>
-                    <option value="">Select State</option>
-                    {% for state in states %}
-                    <option value="{{ state }}">{{ state }}</option>
-                    {% endfor %}
+                    <option value="Punjab">Punjab</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label for="crop_type">Crop Type:</label>
                 <select id="crop_type" name="crop_type" required>
@@ -79,7 +80,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="form-group">
                 <label for="soil_type">Soil Type:</label>
                 <select id="soil_type" name="soil_type" required>
@@ -89,25 +89,62 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="form-group">
                 <label for="year">Year:</label>
-                <input type="number" id="year" name="year" min="1900" max="2100" required>
+                <input type="number" id="year" name="year" min="2000" max="2024" required>
             </div>
-
             <div class="form-group">
                 <label for="rainfall">Rainfall (mm):</label>
-                <input type="number" id="rainfall" name="rainfall" step="0.01" min="0" required>
+                <input type="number" id="rainfall" name="rainfall" step="0.01" min="0" required readonly>
+                <div id="rainfall-loading" class="loading">Fetching rainfall data...</div>
             </div>
-
             <div class="form-group">
                 <label for="irrigation_area">Irrigation Area (ha):</label>
                 <input type="number" id="irrigation_area" name="irrigation_area" step="0.01" min="0" required>
             </div>
-
             <button type="submit">Predict Yield</button>
         </form>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const yearInput = document.getElementById('year');
+            const rainfallInput = document.getElementById('rainfall');
+            const loadingDiv = document.getElementById('rainfall-loading');
+
+            async function fetchRainfall() {
+                const year = yearInput.value;
+
+                if (year >= 2000 && year <= 2024) {
+                    loadingDiv.style.display = 'block';
+                    rainfallInput.value = '';
+                    
+                    try {
+                        const response = await fetch(`/get_rainfall?year=${year}`);
+                        const data = await response.json();
+
+                        if (data.success) {
+                            rainfallInput.value = data.rainfall;
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching rainfall data:', error);
+                        alert('Error fetching rainfall data. Please try again.');
+                    } finally {
+                        loadingDiv.style.display = 'none';
+                    }
+                }
+            }
+
+            yearInput.addEventListener('change', fetchRainfall);
+            yearInput.addEventListener('input', function() {
+                if (this.value < 2000 || this.value > 2024) {
+                    rainfallInput.value = '';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 {% endblock %}

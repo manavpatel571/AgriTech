@@ -25,38 +25,9 @@ lgbm_model = joblib.load('models/lgbm_model.pkl')
 state_encoder = joblib.load('models/State_encoder.pkl')
 crop_type_encoder = joblib.load('models/Crop_Type_encoder.pkl')
 soil_type_encoder = joblib.load('models/Soil_Type_encoder.pkl')
-
-# Punjab rainfall data from 2000 to 2024 (in mm)
-PUNJAB_RAINFALL = {
-    2000: 391.9,
-    2001: 662.8,
-    2002: 314.5,
-    2003: 459.5,
-    2004: 375.2,
-    2005: 565.9,
-    2006: 418.3,
-    2007: 438,
-    2008: 529.2,
-    2009: 384.9,
-    2010: 472.1,
-    2011: 218.9,
-    2012: 668.4,
-    2013: 619.7,
-    2014: 384.9,
-    2015: 546.9,
-    2016: 426.7,
-    2017: 493,
-    2018: 598.3,
-    2019: 578.6,
-    2020: 602.6,
-    2021: 556.9,
-    2022: 689.5,
-    2023: 417.2,
-    2024: 512.4  # Projected/estimated value
-}
-
+ 
 # Get available options for categorical variables
-states = ['Punjab']  # Only Punjab
+states = state_encoder.classes_
 crop_types = crop_type_encoder.classes_
 soil_types = soil_type_encoder.classes_
 
@@ -218,31 +189,10 @@ def yield_prediction():
 def disease_detection():
     return render_template('index2.html')
 
-@app.route('/get_rainfall', methods=['GET'])
-def get_rainfall():
-    try:
-        year = int(request.args.get('year'))
-        
-        if year in PUNJAB_RAINFALL:
-            return jsonify({
-                'success': True,
-                'rainfall': PUNJAB_RAINFALL[year]
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': f'Rainfall data not available for year {year}. Please select a year between 2000 and 2024.'
-            })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        })
-
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Create input data dictionary  
+        # Create input data dictionary
         input_data = {
             'State': request.form['state'],
             'Crop_Type': request.form['crop_type'],
@@ -262,11 +212,11 @@ def predict():
 
         # Apply feature engineering
         input_processed = feature_engineering(input_df)
-
+        
         # Make predictions
         dt_pred = dt_model.predict(input_processed)[0]
         lgbm_pred = lgbm_model.predict(input_processed)[0]
-
+        
         # Combine predictions using the same weights as in training
         final_prediction = 0.9 * dt_pred + 0.108 * lgbm_pred
 
