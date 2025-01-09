@@ -14,7 +14,7 @@ from lightgbm import LGBMRegressor
 
 app = Flask(__name__)
 
-# Configuration
+# Configuration 
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

@@ -1,77 +1,219 @@
 {% extends "base.html" %}
 {% block content %}
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <title>Crop Yield Prediction</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
+        :root {
+            --primary-color: #2ecc71;
+            --secondary-color: #27ae60;
+            --background-color: #f9fafb;
+            --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            background-color: #f4f4f4;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
         }
+
         .container {
             max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--box-shadow);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+            animation: fadeIn 1s ease-in;
         }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
         h1 {
-            color: #333;
+            color: #2c3e50;
             text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            animation: slideInDown 0.5s ease-out;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
         }
+
+        h1:after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--primary-color);
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 25px;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
         }
+
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+            transform: translateX(0);
+            transition: transform 0.3s ease;
         }
+
+        .form-group:hover label {
+            transform: translateX(5px);
+            color: var(--primary-color);
+        }
+
         input, select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             box-sizing: border-box;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: #fff;
         }
+
+        input:focus, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+            outline: none;
+        }
+
         button {
-            background-color: #4CAF50;
+            background-color: var(--primary-color);
             color: white;
-            padding: 10px 20px;
+            padding: 15px 25px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+
         button:hover {
-            background-color: #45a049;
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow);
         }
+
+        button:active {
+            transform: translateY(0);
+        }
+
         .loading {
             display: none;
             color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+            animation: pulse 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        input:invalid, select:invalid {
+            border-color: #ff6b6b;
+        }
+
+        .validation-message {
+            color: #ff6b6b;
             font-size: 12px;
             margin-top: 5px;
+            display: none;
+        }
+
+        input:invalid + .validation-message {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            input, select, button {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Crop Yield Prediction</h1>
-        <form action="{{ url_for('predict') }}" method="post">
-            <div class="form-group">
+        <form action="{{ url_for('predict') }}" method="post" id="predictionForm">
+            <div class="form-group animate__animated animate__fadeInUp">
                 <label for="state">State:</label>
                 <select id="state" name="state" required>
+                    <option value="">Select State</option>
                     <option value="Punjab">Punjab</option>
                 </select>
             </div>
-            <div class="form-group">
+
+            <div class="form-group animate__animated animate__fadeInUp">
                 <label for="crop_type">Crop Type:</label>
                 <select id="crop_type" name="crop_type" required>
                     <option value="">Select Crop Type</option>
@@ -80,7 +222,8 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="form-group">
+
+            <div class="form-group animate__animated animate__fadeInUp">
                 <label for="soil_type">Soil Type:</label>
                 <select id="soil_type" name="soil_type" required>
                     <option value="">Select Soil Type</option>
@@ -89,34 +232,52 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="form-group">
+
+            <div class="form-group animate__animated animate__fadeInUp">
                 <label for="year">Year:</label>
                 <input type="number" id="year" name="year" min="2000" max="2024" required>
+                <div class="validation-message">Please enter a year between 2000 and 2024</div>
             </div>
-            <div class="form-group">
+
+            <div class="form-group animate__animated animate__fadeInUp">
                 <label for="rainfall">Rainfall (mm):</label>
                 <input type="number" id="rainfall" name="rainfall" step="0.01" min="0" required readonly>
-                <div id="rainfall-loading" class="loading">Fetching rainfall data...</div>
+                <div id="rainfall-loading" class="loading">
+                    <span class="spinner"></span>
+                    <span>Fetching rainfall data...</span>
+                </div>
             </div>
-            <div class="form-group">
+
+            <div class="form-group animate__animated animate__fadeInUp">
                 <label for="irrigation_area">Irrigation Area (ha):</label>
                 <input type="number" id="irrigation_area" name="irrigation_area" step="0.01" min="0" required>
+                <div class="validation-message">Please enter a valid irrigation area</div>
             </div>
-            <button type="submit">Predict Yield</button>
+
+            <button type="submit" id="submitBtn">
+                Predict Yield
+            </button>
         </form>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('predictionForm');
             const yearInput = document.getElementById('year');
             const rainfallInput = document.getElementById('rainfall');
             const loadingDiv = document.getElementById('rainfall-loading');
+            const submitBtn = document.getElementById('submitBtn');
+
+            const formGroups = document.querySelectorAll('.form-group');
+            formGroups.forEach((group, index) => {
+                group.style.animationDelay = `${index * 0.1}s`;
+            });
 
             async function fetchRainfall() {
                 const year = yearInput.value;
 
                 if (year >= 2000 && year <= 2024) {
-                    loadingDiv.style.display = 'block';
+                    loadingDiv.style.display = 'flex';
                     rainfallInput.value = '';
                     
                     try {
@@ -142,6 +303,23 @@
                 if (this.value < 2000 || this.value > 2024) {
                     rainfallInput.value = '';
                 }
+            });
+
+            form.addEventListener('submit', function(e) {
+                submitBtn.innerHTML = '<span class="spinner"></span> Predicting...';
+                submitBtn.disabled = true;
+            });
+
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('invalid', function(e) {
+                    e.preventDefault();
+                    this.classList.add('invalid');
+                });
+
+                input.addEventListener('input', function() {
+                    this.classList.remove('invalid');
+                });
             });
         });
     </script>
