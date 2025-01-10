@@ -6,6 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Your existing styles remain exactly the same */
         body {
             font-family: 'Poppins', sans-serif;
             line-height: 1.6;
@@ -258,6 +259,52 @@
             <div class="prediction-value">
                 {{ prediction }} kg/ha
             </div>
+
+            <!-- Practical Metrics Section -->
+            <div class="input-details">
+                <h3>Practical Metrics</h3>
+                <div class="input-grid">
+                    <div class="input-item">
+                        <div class="input-label">Total Production</div>
+                        <div class="input-value">{{ input_data.total_production }} tonnes</div>
+                    </div>
+                    <div class="input-item">
+                        <div class="input-label">Number of Sacks</div>
+                        <div class="input-value">{{ input_data.sacks }} {% if input_data.Crop_Type == 'Rice' %}(25kg){% else %}(50kg){% endif %}</div>
+                    </div>
+                    <div class="input-item">
+                        <div class="input-label">Estimated Revenue</div>
+                        <div class="input-value">₹{{ "{:,.2f}".format(input_data.revenue) }}</div>
+                    </div>
+                    {% if input_data.Crop_Type == 'Wheat' %}
+                    <div class="input-item">
+                        <div class="input-label">Optimal Sowing Time</div>
+                        <div class="input-value">October-November</div>
+                    </div>
+                    <div class="input-item">
+                        <div class="input-label">Fertilizer Ratio</div>
+                        <div class="input-value">NPK 120:60:40</div>
+                    </div>
+                    {% elif input_data.Crop_Type == 'Rice' %}
+                    <div class="input-item">
+                        <div class="input-label">Optimal Transplanting</div>
+                        <div class="input-value">June-July</div>
+                    </div>
+                    <div class="input-item">
+                        <div class="input-label">Fertilizer Ratio</div>
+                        <div class="input-value">NPK 120:60:60</div>
+                    </div>
+                    {% endif %}
+                    {% if input_data.Rainfall < 400 %}
+                    <div class="input-item">
+                        <div class="input-label">Irrigation Advisory</div>
+                        <div class="input-value">Additional irrigation recommended</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Input Details Section -->
             <div class="input-details">
                 <h3>Input Details</h3>
                 <div class="input-grid">
@@ -283,7 +330,7 @@
                     </div>
                     <div class="input-item">
                         <div class="input-label">Irrigation Area</div>
-                        <div class="input-value">{{ input_data.Irrigation_Area }} ha</div>
+                        <div class="input-value">{{ input_data.original_area }} {{ input_data.area_unit }}</div>
                     </div>
                 </div>
             </div>

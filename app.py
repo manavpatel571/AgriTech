@@ -11,6 +11,7 @@ from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
 from sklearn.tree import DecisionTreeRegressor
 from lightgbm import LGBMRegressor
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -239,9 +240,18 @@ def get_rainfall():
             'message': str(e)
         })
 
+# In your Flask route (app.py)
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        # Get the area and unit from the form
+        irrigation_area = float(request.form['irrigation_area'])
+        area_unit = request.form['area_unit']
+        
+        # Convert acres to hectares if necessary
+        if area_unit == 'acres':
+            irrigation_area = irrigation_area * 0.4047  # 1 acre = 0.4047 hectares
+        
         # Create input data dictionary  
         input_data = {
             'State': request.form['state'],
@@ -249,7 +259,7 @@ def predict():
             'Soil_Type': request.form['soil_type'],
             'Year': float(request.form['year']),
             'Rainfall': float(request.form['rainfall']),
-            'Irrigation_Area': float(request.form['irrigation_area'])
+            'Irrigation_Area': irrigation_area  # Now in hectares
         }
 
         # Create DataFrame
@@ -267,16 +277,45 @@ def predict():
         dt_pred = dt_model.predict(input_processed)[0]
         lgbm_pred = lgbm_model.predict(input_processed)[0]
 
-        # Combine predictions using the same weights as in training
+        # Combine predictions
         final_prediction = 0.9 * dt_pred + 0.108 * lgbm_pred
+
+        # Calculate practical metrics
+        total_production = final_prediction * irrigation_area  # Total production in tonnes
+        
+        # Crop-specific calculations
+        if input_data['Crop_Type'] == 'Wheat':
+            sacks = int(total_production * 1000 / 50)  # 50kg sacks
+            revenue = total_production * 20000  # ₹20,000 per tonne
+        elif input_data['Crop_Type'] == 'Rice':
+            sacks = int(total_production * 1000 / 25)  # 25kg sacks
+            revenue = total_production * 18000  # ₹18,000 per tonne
+        else:
+            sacks = int(total_production * 1000 / 50)  # Default to 50kg sacks
+            revenue = total_production * 15000  # Default price
+
+        # Add practical metrics to input_data
+        input_data.update({
+            'total_production': round(total_production, 2),
+            'sacks': sacks,
+            'revenue': round(revenue, 2),
+            'original_area': request.form['irrigation_area'],
+            'area_unit': area_unit
+        })
+
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         return render_template('result.html',
                              prediction=round(final_prediction, 2),
-                             input_data=input_data)
+                             input_data=input_data,
+                             timestamp=current_time)
 
     except Exception as e:
-        return render_template('result.html', error=str(e))
-
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return render_template('result.html', 
+                             error=str(e),
+                             timestamp=current_time)
+    
 @app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
